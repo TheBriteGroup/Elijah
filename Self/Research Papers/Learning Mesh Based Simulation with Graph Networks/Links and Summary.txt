@@ -1,0 +1,14 @@
+https://arxiv.org/abs/2010.03409
+
+https://github.com/google-deepmind/deepmind-research/tree/master/meshgraphnets
+
+This paper introduces MeshGraphNets, a framework for learning mesh-based simulations using graph neural networks. Key points:
+
+MeshGraphNets can learn to simulate a wide range of physical systems including cloth, structural mechanics, incompressible and compressible fluids.
+It works by encoding the simulation state into a graph and performing computations in both the mesh-space (spanned by the simulation mesh) and the world-space the mesh is embedded in.
+Message-passing in mesh-space approximates differential operators underlying internal dynamics, while message-passing in world-space captures external dynamics like contact and collisions.
+Using unstructured irregular meshes allows learning resolution-independent dynamics. The model can adaptively change the mesh discretization during rollouts.
+MeshGraphNets outperform particle-based and grid-based baselines, generalizing to larger, more complex settings at test time while being significantly faster than ground truth solvers.
+Key innovations are learning on unstructured meshes for resolution-independence, performing both mesh-space and world-space message passing, and learning to dynamically adapt meshes.
+
+In summary, it is a general, high-performance mesh-based physical simulator powered by graph neural networks that can model a diverse set of systems in a resolution-agnostic manner. The adaptive meshing allows concentrating compute on important regions.
