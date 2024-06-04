@@ -4,10 +4,24 @@
 #
 # Brief: This is the implementation of the CNN for the normalized data.
 
-import TensorFlow as tf
-import Keras as keras
+import tensorflow as tf
+import keras as keras
+from tensorflow.python.keras.layers import Conv1D, Flatten, Dense, Dropout
 import numpy as np
 
+
+
+class MCDropout(Dropout):
+    """The Monte Carlo dropout function from the regular keras dropout function."""
+
+    def call(self, inputs):
+        return super().call(inputs, training=True)
+
+def get_target_rul(actual_rul):
+    if actual_rul > 125:
+        return 125
+    else:
+        return actual_rul
 
 # Initialize the hyperparameters
 N = 30
@@ -96,29 +110,42 @@ def create_sequences(data, window_size):
             window = engine_data[i:i + window_size, 1:-1] # Exclude first and last columns
 
             X.append(window) # Sensor readings
-            y.append(engine_data[i+window_size-1, -1]) # RUL values in the last column
+            actual_rul = engine_data[i+window_size-1, -1] #RUL Values from the last col
+            target_rul = get_target_rul(actual_rul)
+            y.append(target_rul)
 
     return np.array(X), np.array(y)
 
+# ----------------------------------------------------------------------------------
 
-
-
-model = keras.Sequential([
-
-    '''
+'''
     Input Layer: Sequences of sensor data.
     Convolutional Layers: For feature extraction.
     Flatten Layer: To convert the 2D outputs to 1D.
     Dense Layers: For learning complex patterns and outputting the final result
-    '''
-
-    # Layers
-    keras.layers.Conv1D(filters=K, kernel_size=S, activation='tanh', input_shape=(N,num_sensors)),
-    keras.layers.Conv1D(filters=K, kernel_size=S_prime),
-    keras.layers.Flatten(),
-    keras.layers.Dense(units=100, activation='tanh'),
-    keras.layers.Dense(units=1)
+'''
+model = keras.Sequential([
+    Conv1D(filters=10, kernel_size=10, activation='tanh', input_shape=(num_sensors, N)),
+    MCDropout(rate=0.5),
+    Conv1D(filters=10, kernel_size=10, activation='tanh'),
+    MCDropout(rate=0.5),
+    Conv1D(filters=10, kernel_size=10, activation='tanh'),
+    MCDropout(rate=0.5),
+    Conv1D(filters=10, kernel_size=10, activation='tanh'),
+    MCDropout(rate=0.5),
+    Conv1D(filters=1, kernel_size=3, activation='tanh'),
+    MCDropout(rate=0.5),
+    
+    # Flatten layer
+    Flatten(),
+    MCDropout(rate=0.5),
+    
+    # Fully connected layers
+    Dense(units=100, activation='tanh'),
+    MCDropout(rate=0.5),
+    Dense(units=1)
 ])
+   
 
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
@@ -127,11 +154,5 @@ X_train, y_train = create_sequences(train_data, window_size=N)
 model.fit(X_train, y_train, epochs=100, batch_size=32, validation_data=(X_val, y_val))
 
 loss, mae = model.evaluate(X_test, y_test)
-
-
 predictions = model.predict(X_new)
-
-
-
-
 
