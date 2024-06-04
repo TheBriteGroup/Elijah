@@ -1,7 +1,27 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer as SklearnSimpleImputer, KNNImputer, IterativeImputer
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
-from datawig import SimpleImputer, LinearImputer, DeepImputer, IterativeImputer, random_split
+from datawig import SimpleImputer as DataWigSimpleImputer
+from datawig import Imputer as DataWigDeepImputer
+
+# Load the dataset
+df = pd.read_csv('your_dataset.csv')
+
+# Specify the column to impute
+column_to_impute = 'target_column'
+
+# Split the data into train and test sets
+train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+
+# List of imputers to compare
+imputers = [
+    ('SklearnSimpleImputer', SklearnSimpleImputer(strategy='mean')),
+    ('KNNImputer', KNNImputer(n_neighbors=5)),
+    ('IterativeImputer', IterativeImputer(max_iter=10, random_state=0)),
+   
+
 
 
 '''
@@ -39,36 +59,39 @@ train_df, test_df = random_split(df)
 
 # List of imputers to compare
 imputers = [
-    SimpleImputer,
-    LinearImputer,
-    DeepImputer,
-    IterativeImputer
+    ('SklearnSimpleImputer', SklearnSimpleImputer(strategy='mean')),
+    ('KNNImputer', KNNImputer(n_neighbors=5)),
+    ('IterativeImputer', IterativeImputer(max_iter=10, random_state=0)),
+    ('DataWigSimpleImputer', DataWigSimpleImputer(input_columns=['fill'], output_column=column_to_impute)),
+    ('DataWigDeepImputer', DataWigDeepImputer(input_columns=['fill'], output_column=column_to_impute))
 ]
 
+
 # Evaluate each imputer
-for Imputer in imputers:
+for name, imputer in imputers:
     
-    # Initialize the imputer
-    imputer = Imputer(
-        input_columns=['fill'],
-        output_column=column_to_impute,
-        output_path=f'imputer_model_{Imputer.__name__}'
-    )
+    if 'DataWig' in name:
+        # For DataWig imputers
+        imputer.fit(train_df=train_df_datawig)
+        imputed_test_df = imputer.predict(test_df_datawig).to_pandas_dataframe()
     
-    # Fit the imputer on the training data
-    imputer.fit(train_df=train_df)
-    
-    # Impute missing values in the test data
-    imputed_test_df = imputer.predict(test_df)
-    
+    else:
+    # For scikit-learn imputers
+        imputer.fit(train_df.drop(columns=[column_to_impute]))
+        imputed_values = imputer.transform(test_df.drop(columns=[column_to_impute]))
+        imputed_test_df = test_df.copy()
+        imputed_test_df[column_to_impute] = imputed_values[:, test_df.columns.get_loc(column_to_impute)]
+
+
     # overall measure of the imputation accuracy, lower values are better
-    mse = mean_squared_error(imputed_test_df[column_to_impute], test_df[column_to_impute])
-    
+    mse = mean_squared_error(test_df[column_to_impute].dropna(), imputed_test_df[column_to_impute].loc[test_df[column_to_impute].notna()])
+
+
     # Linear correlation between the imputed values and the actual values
     # -1 to 1, where 1 indicates a strong positive correlation. We are looking for close to 1
-    pearson_corr, _ = pearsonr(imputed_test_df[column_to_impute], test_df[column_to_impute])
+    pearson_corr, _ = pearsonr(test_df[column_to_impute].dropna(), imputed_test_df[column_to_impute].loc[test_df[column_to_impute].notna()])
 
-    print(f"Evaluating {Imputer.__name__}:")
+    print(f"Evaluating {name}:")
     print(f"Imputation MSE: {mse:.4f}")
     print(f"Pearson Correlation: {pearson_corr:.4f}")
     print()
