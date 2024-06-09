@@ -20,6 +20,7 @@ imputers = [
     ('SklearnSimpleImputer', SklearnSimpleImputer(strategy='mean')),
     ('KNNImputer', KNNImputer(n_neighbors=5)),
     ('IterativeImputer', IterativeImputer(max_iter=10, random_state=0)),
+]
    
 
 
