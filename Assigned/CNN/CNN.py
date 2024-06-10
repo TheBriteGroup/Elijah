@@ -11,12 +11,12 @@
 import tensorflow as tf
 from tensorflow import keras
 from keras import Sequential
-from keras._tf_keras.keras.layers import Conv1D, Flatten, Dense, Dropout
+from keras._tf_keras.keras.layers import Conv2D, Flatten, Dense, Dropout
 from keras._tf_keras.keras.optimizers import Adam
 from keras._tf_keras.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 import numpy as np
 import os
-import matplotlib.pyplot as plt
+import data_prep as dp
 
 
 class MCDropout(Dropout):
@@ -31,41 +31,26 @@ def get_target_rul(actual_rul, R_early):
     else:
         return actual_rul
     
-def create_sequences(data, window_size):
-    X = [] # Input sequences 
-    # 3D array with shape (num_samples, window_size, num_sensors)
+def create_sequences(instance, window_size):
+    data = dp.prepare_training_data(instance, window_size)
 
-    y = [] # RUL values
-    # 1D array with shape (num_samples)
-
-
-    for engine_id in np.unique(data[:, 0]):
-        engine_data = data[data[:, 0] == engine_id] # data from all rows that match the engine_id
-
-        for i in range(len(engine_data) - window_size):
-            window = engine_data[i:i + window_size, 1:-1] # Exclude first and last columns
-            window = window.T  # Transpose the window to shape (num_sensors, window_size)
-
-            X.append(window) # Sensor readings
-            actual_rul = engine_data[i+window_size-1, -1] #RUL Values from the last col
-            target_rul = get_target_rul(actual_rul, R_early=125)
-            y.append(target_rul)
-
-    return np.array(X), np.array(y)
+    input_array = data[0]
+    target_array = data[1]
+    return input_array, target_array
 
 
-def create_model(input_shape):
+def create_model():
         
     N = 30
     L = 5
     K = 10
-    S = 10
-    S_prime = 3
+    S = (1,10)
+    S_prime = (1,3)
     nodes = 100
     p = 0.5
     M = 1000
     R_early = 125
-    num_sensors = 21
+    num_sensors = 14 # 21 sensors in total, 14 are used in the model
     """
     Table 2: Considered hyperparameters of the CNN.
     +--------------------------------------------------+----------+
@@ -135,21 +120,21 @@ def create_model(input_shape):
         Dense Layers: For learning complex patterns and outputting the final result
     '''
     model = Sequential([
-        Conv1D(filters=K, kernel_size=S, activation='tanh', input_shape=input_shape, padding="same"),
+        Conv2D(filters=K, kernel_size=S, activation='tanh', input_shape=(num_sensors, N, 1), padding="same", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
-        Conv1D(filters=K, kernel_size=S, activation='tanh', padding="same"),
+        Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
-        Conv1D(filters=K, kernel_size=S, activation='tanh', padding="same"),
+        Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
-        Conv1D(filters=K, kernel_size=S, activation='tanh', padding="same"),
+        Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
-        Conv1D(filters=1, kernel_size=S_prime, activation='tanh', padding="same"),
+        Conv2D(filters=1, kernel_size=S_prime, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
         Flatten(),
         MCDropout(rate=0.5),
-        Dense(units=100, activation='tanh'),
+        Dense(100, activation="tanh", kernel_initializer="glorot_normal"),
         MCDropout(rate=0.5),
-        Dense(units=1, activation='relu')
+        Dense(1, activation="relu", kernel_initializer="glorot_normal")
     ])
     
     # Compile the model
@@ -157,13 +142,14 @@ def create_model(input_shape):
     
     return model
 
-def train_model(model, X_train, y_train, X_val, y_val):
+def train_model(model, X_train, y_train, engine_set):
     # Define callbacks
     mcp_save = ModelCheckpoint("cnn_model_best.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=0.0000001, verbose=1, min_delta=1e-4, mode="auto")
+    model.save(f'cnn_model_{engine_set}.keras')
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=250, batch_size=32, validation_data=(X_val, y_val), callbacks=[mcp_save, reduce_lr_loss])
+    history = model.fit(X_train, y_train, epochs=250, batch_size=32, callbacks=[mcp_save, reduce_lr_loss], validation_split=0.2, verbose=1)
     
     return history
 # ----------------------------------------------------------------------------------
@@ -171,31 +157,34 @@ def train_model(model, X_train, y_train, X_val, y_val):
 def main():
 
     # Load and preprocess the data for each dataset
-    engine_sets = ['FD001', 'FD002', 'FD003', 'FD004']
+    engine_sets = ['FD001']
+    # , 'FD002', 'FD003', 'FD004']
     models = {}  # Dictionary to store trained models
     N = 30  # Window size
-    num_sensors=21
+    num_sensors=14
 
     for engine_set in engine_sets:
         print(f"Evaluating model for engine set: {engine_set}")
         
         # Load and preprocess the data
-        train_data = np.loadtxt(f'Assigned/CNN/Normalized Data/normalized_train_{engine_set}.txt')
-        X_train, y_train = create_sequences(train_data, window_size=N)
+        X_train, y_train = create_sequences(engine_set, window_size=N)
         
-        # Split the data into training and validation sets
-        split_ratio = 0.8
-        split_index = int(len(X_train) * split_ratio)
-        X_train, X_val = X_train[:split_index], X_train[split_index:]
-        y_train, y_val = y_train[:split_index], y_train[split_index:]
+        print("The dimensions of y_train are ", len(y_train))
+        print("with type ", type(y_train))
+        print(y_train[0])
+
+        print("The dimensions of x_train are ", X_train.shape)
+        print("the type of x_train is ", type(X_train))
+        print("The length of X_train is ", len(X_train))
+        print("-----------------")
+
+        print("Shape of X_train:", X_train.shape)
+        input("Press Enter to continue...")
         
         # Create and train the model
-        model = create_model(input_shape=(num_sensors, N))
-        history = train_model(model, X_train, y_train, X_val, y_val)
+        model = create_model()
+        history = train_model(model, X_train, y_train, engine_set)
         
-        # Save the trained model
-        model.save(f'cnn_model_{engine_set}.keras')
-        models[engine_set] = model
         # Create a folder for cnn_history if it doesn't exist
         if not os.path.exists('cnn_history'):
             os.makedirs('cnn_history')
