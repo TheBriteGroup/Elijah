@@ -102,7 +102,7 @@ def normalize_all_data():
     
     print("Normalization completed. Normalized data saved to the 'Normalized Data' folder.")
 
-def prepare_training_data(instance, window_size):
+def prepare_training_data(instance, window_size, test_or_train):
     """
     returns X and y, where X is a list of input samples and y is a list of target RULs.
     Preprocessed Training Data
@@ -175,8 +175,8 @@ Input Features (X)                 Target Labels (y)
 +--------+--------+-----+          +-----+
     
     """
-    data_targets = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_train_{instance}.txt", sep=" ", header=None)
-    data_targets.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"]
+    data_targets = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_{test_or_train}_{instance}.txt", sep=" ", header=None)
+    data_targets.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"] 
     sensors_to_drop = ["S1", "S5", "S6", "S10", "S16", "S18", "S19"]
     data_targets = data_targets.drop(columns=sensors_to_drop)
 
@@ -192,7 +192,6 @@ Input Features (X)                 Target Labels (y)
         first_index = row_nums[0]  # first index where this condition holds
         
         rownumber = first_index
-
         while (rownumber + window_size) <= last_index:
             input_list = [] #sensor measurements
             
@@ -244,50 +243,6 @@ Input Features (X)                 Target Labels (y)
     y = np.array(y)
 
     return X, y
-
-def prepare_testing_data(instance, window_size, skipped_sensors):
-    test_data = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_test_{instance}.txt", sep=" ", header=None)
-    test_data.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"]
-    test_data = test_data.drop(columns=skipped_sensors)
-
-    test_data = prepare_data_model_endpoints(test_data, window_size)
-
-    x_test = test_data[0] #samples
-    y_test = test_data[1] #target_ruls
-
-    return x_test, y_test
-
-def prepare_data_model_endpoints(data, window_size):
-    samples = []
-    target_ruls = []
-
-    for engine_id in data["ID"].unique():
-        engine_data = data[data["ID"] == engine_id]
-        
-        if len(engine_data) >= window_size:
-            sample = []
-            for sensor in data.columns[2:-1]:
-                sample.append(engine_data[sensor].values[-window_size:])
-            samples.append(sample)
-            
-            target_rul = min(engine_data["RUL"].values[-1], 125)
-            target_ruls.append(target_rul)
-        else:
-            # Zero padding for engines with less than window_size cycles
-            sample = []
-            for sensor in data.columns[2:-1]:
-                padded_data = np.zeros(window_size)
-                padded_data[-len(engine_data):] = engine_data[sensor].values
-                sample.append(padded_data)
-            samples.append(sample)
-            
-            target_rul = min(engine_data["RUL"].values[-1], 125)
-            target_ruls.append(target_rul)
-
-    samples = np.array(samples)
-    target_ruls = np.array(target_ruls)
-
-    return samples, target_ruls
 
 
 # def main():

@@ -32,7 +32,7 @@ def get_target_rul(actual_rul, R_early):
         return actual_rul
     
 def create_sequences(instance, window_size):
-    data = dp.prepare_training_data(instance, window_size)
+    data = dp.prepare_training_data(instance, window_size, test_or_train='train')
 
     input_array = data[0]
     target_array = data[1]
@@ -144,12 +144,12 @@ def create_model():
 
 def train_model(model, X_train, y_train, engine_set):
     # Define callbacks
-    mcp_save = ModelCheckpoint("cnn_model_best.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
+    mcp_save = ModelCheckpoint("cnn_model_FD001.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=0.0000001, verbose=1, min_delta=1e-4, mode="auto")
     model.save(f'cnn_model_{engine_set}.keras')
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=250, batch_size=32, callbacks=[mcp_save, reduce_lr_loss], validation_split=0.2, verbose=1)
+    history = model.fit(X_train, y_train, epochs=150, batch_size=32, callbacks=[mcp_save, reduce_lr_loss], validation_split=0.2, verbose=1)
     
     return history
 # ----------------------------------------------------------------------------------
@@ -168,17 +168,8 @@ def main():
         
         # Load and preprocess the data
         X_train, y_train = create_sequences(engine_set, window_size=N)
+        print("got here")
         
-        print("The dimensions of y_train are ", len(y_train))
-        print("with type ", type(y_train))
-        print(y_train[0])
-
-        print("The dimensions of x_train are ", X_train.shape)
-        print("the type of x_train is ", type(X_train))
-        print("The length of X_train is ", len(X_train))
-        print("-----------------")
-
-        print("Shape of X_train:", X_train.shape)
         input("Press Enter to continue...")
         
         # Create and train the model

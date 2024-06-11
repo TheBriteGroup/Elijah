@@ -8,8 +8,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from keras._tf_keras.keras.models import load_model
-from CNN import create_sequences
 from CNN import MCDropout
+import data_prep as dp
 
 def plot_CNN_history_statistics(history):
     """Plots the loss and MAE (Mean Absolute Error) against the number of epochs."""
@@ -31,15 +31,25 @@ def plot_CNN_history_statistics(history):
 
     plt.figure("Training and Validation Mean Abs. Error (MAE) vs. number of epochs:")
     plt.plot(xrange, train_mean_abs_error, 'r-', label='Training (MAE)')
-    plt.plot(xrange, val_mean_abs_error, 'b-', label='Validation loss (MAE)')
+    #plt.plot(xrange, val_mean_abs_error, 'b-', label='Validation loss (MAE)')
     plt.grid()
     plt.legend()
     plt.show()
 
 
-def plot_predictions(model, test_data, N):
+def create_sequences(instance, window_size, test_or_train):
+    data = dp.prepare_training_data(instance, window_size, test_or_train)
+
+    input_array = data[0]
+    target_array = data[1]
+    return input_array, target_array
+
+def plot_predictions(model, instance, N):
     # Load and preprocess the test data
-    X_test, y_test = create_sequences(test_data, window_size=N)
+    X_test, y_test = create_sequences(instance, window_size=N, test_or_train='test')
+
+    print(f"X_test shape: {X_test.shape}")
+    input("Press Enter to continue...")
     
     # Evaluate the model on the test data
     loss, mae = model.evaluate(X_test, y_test)
@@ -57,11 +67,10 @@ def plot_predictions(model, test_data, N):
     
     # Visualize the predictions
     plt.figure("Predicted RUL vs. Actual RUL")
-    plt.scatter(y_test, predictions, c='blue', label='Predictions')
-    plt.plot([0, max(y_test)], [0, max(y_test)], 'r--', label='Ideal Line')
+    plt.scatter(y_test, predictions)
     plt.xlabel('Actual RUL')
     plt.ylabel('Predicted RUL')
-    plt.legend()
+    plt.title('Predicted vs. Actual RUL')
     plt.show()
 
 
@@ -76,17 +85,15 @@ def main():
         print(f"Visualizing model for engine set: {engine_set}")
 
         # Load and plot the training history
-        history = np.load(f'cnn_history/cnn_history_{engine_set}.npy', allow_pickle=True).item()
-        plot_CNN_history_statistics(history)
+        # history = np.load(f'cnn_history/cnn_history_{engine_set}.npy', allow_pickle=True).item()
+        # plot_CNN_history_statistics(history)
 
         # Load the saved model
         model = load_model(f'cnn_model_{engine_set}.keras', custom_objects={'MCDropout': MCDropout})
         
-        # Load the test data
-        test_data = np.loadtxt(f'Assigned/CNN/Normalized Data/normalized_test_{engine_set}.txt')
-        
+        print("Model loaded successfully.")
         # Process the test data and plot predictions
-        plot_predictions(model, test_data, N=30)  
+        plot_predictions(model, engine_set, N=30)  
     
 
 if __name__ == '__main__':
