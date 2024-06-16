@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from keras._tf_keras.keras.models import load_model
 from CNN import MCDropout
 import data_prep as dp
+import RUL_metrics as rm 
 
 def plot_CNN_history_statistics(history):
     """Plots the loss and MAE (Mean Absolute Error) against the number of epochs."""
@@ -37,19 +38,22 @@ def plot_CNN_history_statistics(history):
     plt.show()
 
 
-def create_sequences(instance, window_size, test_or_train):
-    data = dp.prepare_training_data(instance, window_size, test_or_train)
+def create_sequences(instance, window_size):
+    skipped_sensors = ["S1", "S5", "S6", "S10", "S16", "S18", "S19"]
+
+    data = dp.prepare_testing_data(instance, window_size, skipped_sensors)
 
     input_array = data[0]
     target_array = data[1]
+    target_array = np.array(target_array)
+
+    print(f'input_array type: {type(input_array)}, shape: {input_array.shape}')
+    print(f'target_array type: {type(target_array)}, shape: {target_array.shape}')
+
+    input("Press Enter to continue...")
     return input_array, target_array
 
-def plot_predictions(model, instance, N):
-    # Load and preprocess the test data
-    X_test, y_test = create_sequences(instance, window_size=N, test_or_train='test')
-
-    print(f"X_test shape: {X_test.shape}")
-    input("Press Enter to continue...")
+def plot_predictions(model, instance, X_test, y_test):
     
     # Evaluate the model on the test data
     loss, mae = model.evaluate(X_test, y_test)
@@ -93,7 +97,12 @@ def main():
         
         print("Model loaded successfully.")
         # Process the test data and plot predictions
-        plot_predictions(model, engine_set, N=30)  
+        x_test, y_test = create_sequences(engine_set, window_size=30)
+
+        plot_predictions(model, engine_set, x_test, y_test)  
+
+        # Evaluate the model using metrics from the paper (copied)
+        rm.test_montecarlo_output(model,x_test, y_test, 20, [3], engine_set)
     
 
 if __name__ == '__main__':

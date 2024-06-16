@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import os
 import random as rd
+import pickle
 
 
 # ----------------------------------------------------------------------------------
@@ -102,7 +103,7 @@ def normalize_all_data():
     
     print("Normalization completed. Normalized data saved to the 'Normalized Data' folder.")
 
-def prepare_training_data(instance, window_size, test_or_train):
+def prepare_training_data(instance, window_size):
     """
     returns X and y, where X is a list of input samples and y is a list of target RULs.
     Preprocessed Training Data
@@ -175,9 +176,9 @@ Input Features (X)                 Target Labels (y)
 +--------+--------+-----+          +-----+
     
     """
-    data_targets = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_{test_or_train}_{instance}.txt", sep=" ", header=None)
-    data_targets.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"] 
-    sensors_to_drop = ["S1", "S5", "S6", "S10", "S16", "S18", "S19"]
+    data_targets = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_train_{instance}.txt", sep=" ", header=None)
+    data_targets.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"] +["drop"]
+    sensors_to_drop = ["S1", "S5", "S6", "S10", "S16", "S18", "S19", "drop"]
     data_targets = data_targets.drop(columns=sensors_to_drop)
 
     seed = 1
@@ -244,6 +245,96 @@ Input Features (X)                 Target Labels (y)
 
     return X, y
 
+
+def prepare_testing_data(instance, window_size, skipped_sensors):
+    inputs_targets_end_points = pd.read_csv("Assigned/CNN/Normalized Data/normalized_test_" + instance + ".txt", sep=' ',
+                                            header=None)
+    data = prepare_data_model_endpoints(inputs_targets_end_points, instance, window_size, skipped_sensors)
+
+    x = data[0]  # input array
+    y = data[1]  # output array
+
+    return x, y
+
+def prepare_data_model_endpoints(train_inputs_targets, instance, windowsize, skipped_sensors):
+    """
+
+    Parameters
+    ----------
+    train_inputs_targets
+    instance
+    windowsize
+    skipped_sensors
+
+    Returns
+    -------
+
+    """
+
+    # giving the input data names for all columns
+    # if Instance == 'FD001' or Instance == 'FD003':
+    train_inputs_targets.columns = ['ID', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12',
+                                    'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'RUL',
+                                    'Current opcon']
+
+    train_inputs_targets = train_inputs_targets.drop(columns=skipped_sensors)
+
+    train_inputs_targets = train_inputs_targets.drop(columns=['Current opcon'])
+
+    all_IDs = np.unique(train_inputs_targets["ID"])
+
+    target_ruls = []
+    test_samples = []
+    installation_day = {}
+
+    for engine_number in all_IDs:
+        row_numbers = list(train_inputs_targets[train_inputs_targets["ID"] == engine_number].index)
+        last_index = row_numbers[-1]  # last index where this condition holds
+
+        target_rul = min(train_inputs_targets["RUL"].iloc[last_index], 125)
+        target_ruls.append(target_rul)
+
+        # Find out the installation day
+        number_of_measurements = len(row_numbers)
+        engine = instance + "_" + str(int(engine_number))
+        installation_day[
+            engine] = number_of_measurements  # engine is installed "number_of_measurements" days before (i.e.,
+        # negative)
+
+        input_list = []
+        if len(row_numbers) >= windowsize:
+            # we have enough input!
+            for column in train_inputs_targets.columns:
+                if column == "ID" or column == "RUL":
+                    continue
+
+                input_column = list(train_inputs_targets[column].iloc[last_index - windowsize + 1: last_index + 1])
+                input_column_good = []
+                for i in input_column:
+                    input_column_good.append([i])
+
+                input_list.append(input_column_good)
+
+        else:
+            length_missing = windowsize - len(row_numbers)
+            for column in train_inputs_targets.columns:
+                if column == "ID" or column == "RUL":
+                    continue
+
+                input_column = list(
+                    train_inputs_targets[column].iloc[last_index - len(row_numbers) + 1: last_index + 1])
+                # fill up with zeroes
+                zeroes = [0] * length_missing
+                input_column = zeroes + input_column
+                input_column_good = []
+                for i in input_column:
+                    input_column_good.append([i])
+                input_list.append(input_column_good)
+
+        test_samples.append(input_list)
+    test_samples = np.array(test_samples)
+
+    return test_samples, target_ruls
 
 # def main():
 #     normalize_all_data()

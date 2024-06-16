@@ -32,7 +32,7 @@ def get_target_rul(actual_rul, R_early):
         return actual_rul
     
 def create_sequences(instance, window_size):
-    data = dp.prepare_training_data(instance, window_size, test_or_train='train')
+    data = dp.prepare_training_data(instance, window_size)
 
     input_array = data[0]
     target_array = data[1]
@@ -148,6 +148,15 @@ def train_model(model, X_train, y_train, engine_set):
     reduce_lr_loss = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=0.0000001, verbose=1, min_delta=1e-4, mode="auto")
     model.save(f'cnn_model_{engine_set}.keras')
 
+
+    print("The dimensions of y are ", len(y_train))
+    print("with type ", type(y_train))
+    print(y_train[0])
+    print("The dimensions of x are ", X_train.shape)
+    print("the type of x is ", type(X_train))
+    print("The length of X is ", len(X_train))
+    
+
     # Train the model
     history = model.fit(X_train, y_train, epochs=150, batch_size=32, callbacks=[mcp_save, reduce_lr_loss], validation_split=0.2, verbose=1)
     
@@ -168,9 +177,6 @@ def main():
         
         # Load and preprocess the data
         X_train, y_train = create_sequences(engine_set, window_size=N)
-        print("got here")
-        
-        input("Press Enter to continue...")
         
         # Create and train the model
         model = create_model()
