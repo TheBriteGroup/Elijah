@@ -176,48 +176,77 @@ Input Features (X)                 Target Labels (y)
 +--------+--------+-----+          +-----+
     
     """
+    min_size = 30
+    windowsize = 30
     data_targets = pd.read_csv(f"Assigned/CNN/Normalized Data/normalized_train_{instance}.txt", sep=" ", header=None)
     data_targets.columns = ["ID"] + [f"S{i}" for i in range(1, 22)] + ["RUL"] +["drop"]
     sensors_to_drop = ["S1", "S5", "S6", "S10", "S16", "S18", "S19", "drop"]
     data_targets = data_targets.drop(columns=sensors_to_drop)
 
-    seed = 1
+    seed = 19
     all_IDs = np.unique(data_targets["ID"])
+
+    # if CNN_simulation, sample the training engines as testing engines such that they can be used in the simulation
+   
+    engines_training = all_IDs
 
     target_ruls = []
     samples = []
-    
-    for engine_id in all_IDs:
-        row_nums = list(data_targets[data_targets["ID"] == engine_id].index)
-        last_index = row_nums[-1]  # last index where this condition holds
-        first_index = row_nums[0]  # first index where this condition holds
-        
-        rownumber = first_index
-        while (rownumber + window_size) <= last_index:
-            input_list = [] #sensor measurements
-            
-            current_row = rownumber + window_size
 
-            target_rul = min(data_targets["RUL"].iloc[current_row -1 ], 125)
+    for engine_number in all_IDs:
+
+        row_numbers = list(data_targets[data_targets["ID"] == engine_number].index)
+        last_index = row_numbers[-1]  # last index where this condition holds
+        first_index = row_numbers[0]  # first index where this condition holds
+
+        rownumber = first_index - (windowsize - min_size)
+
+        while (rownumber + windowsize) <= (last_index + 1):
+
+            input_list = []  # the sensor measurements
+
+            # find the most recent row
+            current_row = rownumber + windowsize
+
+            # find the target rul
+            target_rul = min(data_targets["RUL"].iloc[current_row - 1], 125)  # exclude current row
             target_ruls.append(target_rul)
 
-            
-            for column in data_targets.columns:
-                if column =="ID" or column == "RUL":
-                    continue
-                if rownumber < first_index:
-                    input_column = list(data_targets[column].iloc[first_index: current_row])
-                    length_missing = first_index - rownumber
-                    zeros = [0] * length_missing
-                    input_column = zeros + input_column
-                else:
-                    input_column = list(data_targets[column].iloc[rownumber: current_row])
-                input_list.append(input_column)
-            
+            if rownumber < first_index:
+
+                # find the sensor measurements
+                length_missing = first_index - rownumber
+                for column in data_targets.columns:
+                    if column == "ID" or column == "RUL":
+                        continue
+
+                    input_column = list(
+                        data_targets[column].iloc[first_index: current_row])  # exclude current row
+                    # fill up with zeroes
+                    zeroes = [0] * length_missing
+                    input_column = zeroes + input_column
+                    input_list.append(input_column)
+
+
+            else:
+
+                # find the sensor measurements
+                for column in data_targets.columns:
+
+                    if column == "ID" or column == "RUL":
+                        continue
+
+                    input_column = list(
+                        data_targets[column].iloc[rownumber: current_row])  # exclude current row
+
+                    input_list.append(input_column)
+
             samples.append(input_list)
-            rownumber += 1
-            
+
+            rownumber = rownumber + 1
+
     samples = np.array(samples)
+
     training_data = []
 
     # combine input sample with corresponding target RUL
@@ -226,6 +255,7 @@ Input Features (X)                 Target Labels (y)
 
         RUL = target_ruls[i]
         training_data.append([sample, RUL])
+
 
     rd.seed(seed)
     rd.shuffle(training_data)
@@ -244,6 +274,7 @@ Input Features (X)                 Target Labels (y)
     y = np.array(y)
 
     return X, y
+
 
 
 def prepare_testing_data(instance, window_size, skipped_sensors):

@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
@@ -176,6 +175,7 @@ def compute_reliability_score(true_RULs, RUL_distributions, name):
     ideal_curve = list(np.arange(0, 1 + sys.float_info.epsilon, step_size))  # ideal curve, where y = x
 
     plot_reliability_diagram(ideal_curve, reliability_curve, name)
+    
 
     # Calculate the reliability score.
     RS_under = 0  # underestimation of the uncertainty
@@ -224,7 +224,7 @@ def compute_reliability_score(true_RULs, RUL_distributions, name):
             RS_under += surface_under
 
     RS_total = RS_under + RS_over
-    return RS_total, RS_under, RS_over
+    return RS_total, RS_under, RS_over, reliability_curve
 
 
 def plot_reliability_diagram(ideal_curve, reliability_curve, name):
@@ -247,7 +247,6 @@ def plot_reliability_diagram(ideal_curve, reliability_curve, name):
 
     # Display the plot
     plt.show()
-
 
 # this function computes the output values of the model and uses some KPI's to show the results
 def test_montecarlo_output(model, input_array, target_array, number_of_runs, plot_hist, name):
@@ -286,7 +285,8 @@ def test_montecarlo_output(model, input_array, target_array, number_of_runs, plo
     coverage_0_5, mean_width_0_5 = compute_coverage(true_RULs, RUL_distributions, 0.5)
     coverage_0_9, mean_width_0_9 = compute_coverage(true_RULs, RUL_distributions, 0.9)
     coverage_0_95, mean_width_0_95 = compute_coverage(true_RULs, RUL_distributions, 0.95)
-    RS_total, RS_under, RS_over = compute_reliability_score(true_RULs, RUL_distributions, name)
+    RS_total, RS_under, RS_over, curve = compute_reliability_score(true_RULs, RUL_distributions, name)
+    
 
     mean_var, mean_std = compute_mean_variance(RUL_distributions, number_of_runs)
 
@@ -323,57 +323,27 @@ def test_montecarlo_output(model, input_array, target_array, number_of_runs, plo
     print("The mean variance is ", mean_var)
     print("The mean std is ", mean_std)
 
-    ##################################################
-    # -----------------PLot the histograms------------#
-    ##################################################
+    return curve
 
-    for i in plot_hist:
-        fig, ax = plt.subplots()
-        fs = 16
 
-        # get the true RULS
-        true_RUL = true_RULs[i]
+def plot_combined_reliability_diagram(ideal_curve, reliability_curves, names):
+    fig, ax = plt.subplots(figsize=(10, 8))
 
-        # Get the predictions
-        predictions = RUL_distributions[i]
+    for name, reliability_curve in zip(names, reliability_curves):
+        if name == "FD001":
+            ax.plot(ideal_curve, reliability_curve, label=name, color="blue", linestyle="dashed", lw=3)
+        elif name == "FD002":
+            ax.plot(ideal_curve, reliability_curve, label=name, color="green", linestyle="dotted", lw=3)
+        elif name == "FD003":
+            ax.plot(ideal_curve, reliability_curve, label=name, color="chocolate", linestyle='dashdot', lw=3)
+        elif name == "FD004":
+            ax.plot(ideal_curve, reliability_curve, label=name, color="fuchsia", linestyle=(0, (3, 1, 1, 1, 1, 1)), lw=3)
 
-        # PLot a histogram with the predictions
-        bin_width = 5
-        ax.hist(predictions, density=True, bins=np.arange(min(predictions), max(predictions) + bin_width, bin_width),
-                color="lightcoral", ec="lightcoral")
+    ax.plot(ideal_curve, ideal_curve, label='Ideal Curve', color="black", linestyle="solid", lw=2)
+    ax.legend(fontsize=16)
+    ax.set_xlabel('Predicted Probability')
+    ax.set_ylabel('Actual Probability')
+    ax.set_title('Combined Reliability Diagram')
 
-        # Get the mean RUL prediction
-        mean_RUL = mean_RULs[i]
-        print("the true RUL is ", true_RUL, " and the mean RUL is ", mean_RUL)
-
-        # Plot a vertical line at the true RUL
-        ax.axvline(x=true_RUL, lw=3.2, label="Actual RUL", c='b')
-        ax.axvline(x=mean_RUL, lw=3.2, label="Mean predicted RUL", c='r')
-        ax.set_ylabel('Probability', fontsize=fs)
-        ax.set_xlabel('RUL (flight cycles)', fontsize=fs)
-
-        right_side = ax.spines["right"]
-        right_side.set_visible(False)
-        upper_side = ax.spines["top"]
-        upper_side.set_visible(False)
-
-        ax.tick_params(axis='x', labelsize=fs)
-        ax.tick_params(axis='y', labelsize=fs)
-
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=2, fontsize=fs - 2)
-
-        fig.tight_layout()
-        name_fig = "./hist_" + name + "_" + str(i)
-        plt.savefig(name_fig, dpi=400)
-
-    engine_all_predictions = {}
-    engine_mean_prediction = {}
-    engine_true_RUL = {}
-
-    engine_number = 1
-    engine = name + "_" + str(engine_number)
-    engine_all_predictions[engine] = []
-    engine_mean_prediction[engine] = []
-    engine_true_RUL[engine] = []
-
-    
+    # Display the plot
+    plt.show()

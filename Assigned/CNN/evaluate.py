@@ -11,6 +11,8 @@ from keras._tf_keras.keras.models import load_model
 from CNN import MCDropout
 import data_prep as dp
 import RUL_metrics as rm 
+import sys
+
 
 def plot_CNN_history_statistics(history):
     """Plots the loss and MAE (Mean Absolute Error) against the number of epochs."""
@@ -82,28 +84,109 @@ def plot_predictions(model, instance, X_test, y_test):
 
 def main():
     # List of engine sets
-    engine_sets = ['FD001']
+    engine_sets = ['FD001','FD002', 'FD003','FD004']
     #, 'FD002', 'FD003', 'FD004']
+    reliability_curves = []
+    
     
     for engine_set in engine_sets:
         print(f"Visualizing model for engine set: {engine_set}")
 
         # Load and plot the training history
-        # history = np.load(f'cnn_history/cnn_history_{engine_set}.npy', allow_pickle=True).item()
-        # plot_CNN_history_statistics(history)
+        history = np.load(f'cnn_history/cnn_history_{engine_set}.npy', allow_pickle=True).item()
+        plot_CNN_history_statistics(history)
 
         # Load the saved model
         model = load_model(f'cnn_model_{engine_set}.keras', custom_objects={'MCDropout': MCDropout})
         
         print("Model loaded successfully.")
+        # Print information about the model
+        print(model.summary())
+        input("Press Enter to continue..."  )
         # Process the test data and plot predictions
         x_test, y_test = create_sequences(engine_set, window_size=30)
 
         plot_predictions(model, engine_set, x_test, y_test)  
 
         # Evaluate the model using metrics from the paper (copied)
-        rm.test_montecarlo_output(model,x_test, y_test, 20, [3], engine_set)
-    
+        curve = rm.test_montecarlo_output(model,x_test, y_test, 20, [3], engine_set)
+        reliability_curves.append(curve)
+
+    ideal_curve = list(np.arange(0, 1 + sys.float_info.epsilon, 0.01))  # ideal curve, where y = x
+
+    rm.plot_combined_reliability_diagram(ideal_curve, reliability_curves, engine_sets)
+        
 
 if __name__ == '__main__':
     main()
+
+
+# There are a total of 17631 predictions.
+# The reliability score (under) is 0.1252955474546308
+# The reliability score (over) is 0.0009146274841241974
+# The total reliability score is 0.126210174938755
+# The coverage at alpha = 0.5 is 0.35522658952980546
+# The mean width at 0.5 is 14.416368895695083
+# The coverage at 0.alpha = 0.9 is 0.7660370937553174
+# The mean width at 0.9 is 34.71102036186263
+# The coverage at 0.alpha = 0.95 is 0.7660370937553174
+# The mean width at 0.95 is 34.71102036186263
+# The RMSE is 15.381176995235421
+# The MAE is 12.037831092937596
+# The mean variance is  113.04145709330531
+# The mean std is  10.399871734278223
+# the true RUL is  124.0  and the mean RUL is  103.45
+
+
+# FD002:
+# There are a total of 259 predictions.
+# The reliability score (under) is 0.05407634543279984
+# The reliability score (over) is 0.004423835780290149
+# The total reliability score is 0.05850018121308999
+# The coverage at alpha = 0.5 is 0.4671814671814672
+# The mean width at 0.5 is 15.32046332046332
+# The coverage at 0.alpha = 0.9 is 0.8185328185328186
+# The mean width at 0.9 is 36.13899613899614
+# The coverage at 0.alpha = 0.95 is 0.8185328185328186
+# The mean width at 0.95 is 36.13899613899614
+# The RMSE is 14.177627664564074
+# The MAE is 10.785521227420528
+# The mean variance is  123.41707530658094
+# The mean std is  10.90548156665958
+# the true RUL is  110.0  and the mean RUL is  64.65
+
+
+# FD003:
+# The reliability score (under) is 0.026019722222222263
+# The reliability score (over) is 0.008569722222222227
+# The total reliability score is 0.03458944444444449
+# The coverage at alpha = 0.5 is 0.47
+# The mean width at 0.5 is 17.02
+# The coverage at 0.alpha = 0.9 is 0.9
+# The mean width at 0.9 is 39.84
+# The coverage at 0.alpha = 0.95 is 0.9
+# The mean width at 0.95 is 39.84
+# The RMSE is 13.056943680201702
+# The MAE is 10.385500071048737
+# The mean variance is  155.01372496283398
+# The mean std is  12.156652526048212
+# the true RUL is  120.0  and the mean RUL is  113.9
+# PS C:\Users\elija\Desktop\BriteGroup> 
+
+
+# FD004:
+# There are a total of 248 predictions.
+# The reliability score (under) is 0.060917942631055946
+# The reliability score (over) is 0.0036397168246042762
+# The total reliability score is 0.06455765945566022
+# The coverage at alpha = 0.5 is 0.4274193548387097
+# The mean width at 0.5 is 16.092741935483872
+# The coverage at 0.alpha = 0.9 is 0.8104838709677419
+# The mean width at 0.9 is 38.850806451612904
+# The coverage at 0.alpha = 0.95 is 0.8104838709677419
+# The mean width at 0.95 is 38.850806451612904
+# The RMSE is 15.970927834940067
+# The MAE is 12.005443653752726
+# The mean variance is  139.9042642643982
+# The mean std is  11.594696465505427
+# the true RUL is  75.0  and the mean RUL is  98.85

@@ -13,10 +13,11 @@ from tensorflow import keras
 from keras import Sequential
 from keras._tf_keras.keras.layers import Conv2D, Flatten, Dense, Dropout
 from keras._tf_keras.keras.optimizers import Adam
-from keras._tf_keras.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras._tf_keras.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import numpy as np
 import os
 import data_prep as dp
+# import evaluate as ev
 
 
 class MCDropout(Dropout):
@@ -144,9 +145,9 @@ def create_model():
 
 def train_model(model, X_train, y_train, engine_set):
     # Define callbacks
-    mcp_save = ModelCheckpoint("cnn_model_FD001.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
+    mcp_save = ModelCheckpoint(f"cnn_model_{engine_set}.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=0.0000001, verbose=1, min_delta=1e-4, mode="auto")
-    model.save(f'cnn_model_{engine_set}.keras')
+    early_stopping = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
 
 
     print("The dimensions of y are ", len(y_train))
@@ -158,7 +159,8 @@ def train_model(model, X_train, y_train, engine_set):
     
 
     # Train the model
-    history = model.fit(X_train, y_train, epochs=150, batch_size=32, callbacks=[mcp_save, reduce_lr_loss], validation_split=0.2, verbose=1)
+    history = model.fit(X_train, y_train, epochs=150, batch_size=32, callbacks=[mcp_save, reduce_lr_loss, early_stopping], validation_split=0.2, verbose=1)
+
     
     return history
 # ----------------------------------------------------------------------------------
@@ -189,6 +191,9 @@ def main():
         # Save the training history
         # This gets used by the evaluate.py script to plot the loss and MAE against the number of epochs.
         np.save(f'cnn_history/cnn_history_{engine_set}.npy', history.history)
+
+        # Evaluate the model on the test data
+        #ev.main(engine_set)
 
     
 
