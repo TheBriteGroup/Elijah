@@ -93,7 +93,7 @@ def main():
         print(f"Visualizing model for engine set: {engine_set}")
 
         # Load and plot the training history
-        history = np.load(f'cnn_history/cnn_history_{engine_set}.npy', allow_pickle=True).item()
+        history = np.load(f'cnn_figures/cnn_history_{engine_set}.npy', allow_pickle=True).item()
         plot_CNN_history_statistics(history)
 
         # Load the saved model
