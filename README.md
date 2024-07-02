@@ -43,16 +43,16 @@ The CNN-LSTM model demonstrated high accuracy in predicting the RUL of turbofan 
 
 | Engine Set | Total Predictions | Reliability Score (Under) | Reliability Score (Over) | Total Reliability Score | Coverage (Alpha = 0.5) | Mean Width (Alpha = 0.5) | Coverage (Alpha = 0.9) | Mean Width (Alpha = 0.9) | Coverage (Alpha = 0.95) | Mean Width (Alpha = 0.95) | RMSE  | MAE   | Mean Variance | Mean Std Dev |
 |------------|--------------------|---------------------------|--------------------------|-------------------------|-------------------------|--------------------------|------------------------|--------------------------|-------------------------|--------------------------|-------|-------|---------------|--------------|
-| FD001      | 17631              | 0.1253                    | 0.0009                   | 0.1262                  | 0.3552                  | 14.42                    | 0.7660                 | 34.71                    | 0.7660                  | 34.71                    | 15.38 | 12.04 | 113.04        | 10.40        |
+| FD001      | 100              | 0.1253                    | 0.0009                   | 0.1262                  | 0.3552                  | 14.42                    | 0.7660                 | 34.71                    | 0.7660                  | 34.71                    | 15.38 | 12.04 | 113.04        | 10.40        |
 | FD002      | 259                | 0.0541                    | 0.0044                   | 0.0585                  | 0.4672                  | 15.32                    | 0.8185                 | 36.14                    | 0.8185                  | 36.14                    | 14.18 | 10.79 | 123.42        | 10.91        |
 | FD003      | -                  | 0.0260                    | 0.0086                   | 0.0346                  | 0.4700                  | 17.02                    | 0.9000                 | 39.84                    | 0.9000                  | 39.84                    | 13.06 | 10.39 | 155.01        | 12.16        |
 | FD004      | 248                | 0.0609                    | 0.0036                   | 0.0646                  | 0.4274                  | 16.09                    | 0.8105                 | 38.85                    | 0.8105                  | 38.85                    | 15.97 | 12.01 | 139.90        | 11.59        |
 
 ## Training and Validation Loss
 
-![Training and Validation Loss](Assigned/CNN/MSE_vs_epochs.png)
-![Predicted RUL vs Actual](cnn_figures/FD001/Predicted_RUL_vs._Actual_RUL_ALL.png)
-![Combined Reliability Diagram](<cnn_figures/Combined Reliability Diagram.png>)
+![Training and Validation Loss](Assigned/CNN/MSE_vs_epochs.png){: width="500px"}
+![Predicted RUL vs Actual](cnn_figures/FD001/Predicted_RUL_vs._Actual_RUL_ALL.png){: width="500px"}
+![Combined Reliability Diagram](<cnn_figures/Combined Reliability Diagram.png>){: width="500px"}
 
 ## Conclusions and Future Work
 
