@@ -84,7 +84,7 @@ def plot_predictions(model, instance, X_test, y_test):
 
 def main():
     # List of engine sets
-    engine_sets = ['FD001','FD002', 'FD003','FD004']
+    engine_sets = ['FD001']
     #, 'FD002', 'FD003', 'FD004']
     reliability_curves = []
     
@@ -112,30 +112,29 @@ def main():
         curve = rm.test_montecarlo_output(model,x_test, y_test, 20, [3], engine_set)
         reliability_curves.append(curve)
 
-    ideal_curve = list(np.arange(0, 1 + sys.float_info.epsilon, 0.01))  # ideal curve, where y = x
+    #ideal_curve = list(np.arange(0, 1 + sys.float_info.epsilon, 0.01))  # ideal curve, where y = x
 
-    rm.plot_combined_reliability_diagram(ideal_curve, reliability_curves, engine_sets)
+    #rm.plot_combined_reliability_diagram(ideal_curve, reliability_curves, engine_sets)
         
 
 if __name__ == '__main__':
     main()
 
 
-# There are a total of 17631 predictions.
-# The reliability score (under) is 0.1252955474546308
-# The reliability score (over) is 0.0009146274841241974
-# The total reliability score is 0.126210174938755
-# The coverage at alpha = 0.5 is 0.35522658952980546
-# The mean width at 0.5 is 14.416368895695083
-# The coverage at 0.alpha = 0.9 is 0.7660370937553174
-# The mean width at 0.9 is 34.71102036186263
-# The coverage at 0.alpha = 0.95 is 0.7660370937553174
-# The mean width at 0.95 is 34.71102036186263
-# The RMSE is 15.381176995235421
-# The MAE is 12.037831092937596
-# The mean variance is  113.04145709330531
-# The mean std is  10.399871734278223
-# the true RUL is  124.0  and the mean RUL is  103.45
+# There are a total of 100 predictions.
+# The reliability score (under) is 0.011492820512820526
+# The reliability score (over) is 0.03014282051282053
+# The total reliability score is 0.04163564102564106
+# The coverage at alpha = 0.5 is 0.52
+# The mean width at 0.5 is 16.37
+# The coverage at 0.alpha = 0.9 is 0.9
+# The mean width at 0.9 is 37.98
+# The coverage at 0.alpha = 0.95 is 0.9
+# The mean width at 0.95 is 37.98
+# The RMSE is 12.939067069714586
+# The MAE is 9.913000106811523
+# The mean variance is  140.43755004097548
+# The mean std is  11.594259893950055
 
 
 # FD002:
