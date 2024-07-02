@@ -52,7 +52,7 @@ The CNN-LSTM model demonstrated high accuracy in predicting the RUL of turbofan 
 
 ![Training and Validation Loss](Assigned/CNN/MSE_vs_epochs.png)
 ![Predicted RUL vs Actual](cnn_figures/FD001/Predicted_RUL_vs._Actual_RUL_ALL.png)
-![Combined Reliability Diagram](cnn_figures/Combined Reliability Diagram.png)
+![Combined Reliability Diagram](<cnn_figures/Combined Reliability Diagram.png>)
 
 ## Conclusions and Future Work
 
