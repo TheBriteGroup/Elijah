@@ -48,11 +48,15 @@ The CNN-LSTM model demonstrated high accuracy in predicting the RUL of turbofan 
 | FD003      | -                  | 0.0260                    | 0.0086                   | 0.0346                  | 0.4700                  | 17.02                    | 0.9000                 | 39.84                    | 0.9000                  | 39.84                    | 13.06 | 10.39 | 155.01        | 12.16        |
 | FD004      | 248                | 0.0609                    | 0.0036                   | 0.0646                  | 0.4274                  | 16.09                    | 0.8105                 | 38.85                    | 0.8105                  | 38.85                    | 15.97 | 12.01 | 139.90        | 11.59        |
 
-## Training and Validation Loss
+## Sample Figures
+<table>
+  <tr>
+    <td><img src="Assigned/CNN/MSE_vs_epochs.png" alt="Training and Validation Loss" width="500px"></td>
+    <td><img src="cnn_figures/FD001/Predicted_RUL_vs._Actual_RUL_ALL.png" alt="Predicted RUL vs Actual" width="500px"></td>
+  </tr>
+</table>
+<img src="cnn_figures/Combined Reliability Diagram.png" alt="Combined Reliability Diagram" width="500px">
 
-![Training and Validation Loss](Assigned/CNN/MSE_vs_epochs.png){: width="500px"}
-![Predicted RUL vs Actual](cnn_figures/FD001/Predicted_RUL_vs._Actual_RUL_ALL.png){: width="500px"}
-![Combined Reliability Diagram](<cnn_figures/Combined Reliability Diagram.png>){: width="500px"}
 
 ## Conclusions and Future Work
 
