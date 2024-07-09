@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.model_selection import train_test_split
 from keras import Sequential
-from keras._tf_keras.keras.layers import Conv1D, Flatten, Dense, Dropout, MaxPooling1D
+from keras._tf_keras.keras.layers import Conv1D, Conv2D, Flatten, Dense, Dropout, MaxPooling1D
 from keras._tf_keras.keras.optimizers import Adam
 from keras._tf_keras.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import data_prep as dp
@@ -19,6 +19,8 @@ class CNN:
         self.dropout_rate = dropout_rate
         self.num_mc_samples = num_mc_samples
         self.model = self.build_model()
+        self.model_2d = self.build_2d_model()
+
 
     def build_model(self):
         model = Sequential([
@@ -37,13 +39,39 @@ class CNN:
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
         
         return model
+    
+    def build_2d_model(self, K=64, S=3, S_prime=3):
+        num_sensors = self.input_shape[1]
+        N = self.input_shape[0]
+        
+        model = Sequential([
+            Conv2D(filters=K, kernel_size=S, activation='tanh', input_shape=(num_sensors, N, 1), padding="same", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Conv2D(filters=K, kernel_size=S, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Conv2D(filters=1, kernel_size=S_prime, activation='tanh', padding="same", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Flatten(),
+            MCDropout(rate=0.5),
+            Dense(100, activation="tanh", kernel_initializer="glorot_normal"),
+            MCDropout(rate=0.5),
+            Dense(1, activation="relu", kernel_initializer="glorot_normal")
+        ])
+        
+        model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+        
+        return model
 
-    def train(self, X_train, y_train, epochs=100, batch_size=32, validation_split=0.1):
+    def train(self, X_train, y_train, epochs=200, batch_size=32, validation_split=0.1):
         checkpoint = ModelCheckpoint('batteries_best.keras', monitor='val_loss', save_best_only=True, mode='min', verbose=1)
-        early_stop = EarlyStopping(monitor='val_loss', patience=10, mode='min', verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=15, mode="min", verbose= 1, restore_best_weights=True)
         
         self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size,
-                       validation_split=validation_split, callbacks=[checkpoint, early_stop])
+                       validation_split=validation_split, callbacks=[checkpoint, early_stopping])
 
     def evaluate(self, X_test, y_test):
         loss, mae = self.model.evaluate(X_test, y_test)
@@ -56,9 +84,6 @@ class CNN:
             mc_predictions.append(self.model.predict(X))
         mc_predictions = np.array(mc_predictions)
         return np.mean(mc_predictions, axis=0), np.std(mc_predictions, axis=0)
-
-    def save_model(self, file_path):
-        self.model.save(file_path)
 
     def load_model(self, file_path):
         self.model = tf.keras.models.load_model(file_path, custom_objects={'MCDropout': MCDropout})
@@ -78,7 +103,7 @@ def main():
     cnn.load_model('batteries_best.keras')
     cnn.evaluate(X_test, y_test)
     
-    X_new = np.random.rand(10, window_size, 4)
+    X_new = np.random.rand(10, window_size, 5)
     mean, std = cnn.predict(X_new)
     print(f'Mean: {mean}')
     print(f'Std: {std}')
@@ -86,3 +111,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

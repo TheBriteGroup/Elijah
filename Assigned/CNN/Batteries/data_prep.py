@@ -14,10 +14,11 @@ def preprocess_data(data):
     # Normalize the features
     features = ['Time Measured(Sec)', 'Voltage Measured(V)', 'Current Measured', 'Temperature Measured']
     data[features] = (data[features] - data[features].mean()) / data[features].std()
+
     
     return data
 
-def create_sequences(data, window_size, target_col='Capacity(Ah)'):
+def create_sequences(data, window_size, target_col='Cycle'):
 
     sequences = []
     targets = []

@@ -249,81 +249,52 @@ def plot_reliability_diagram(ideal_curve, reliability_curve, name):
     plt.show()
 
 # this function computes the output values of the model and uses some KPI's to show the results
-def test_montecarlo_output(model, input_array, target_array, number_of_runs, plot_hist, name):
-    """
-
-    Parameters
-    ----------
-    model
-    input_array
-    target_array
-    number_of_runs
-    """
+def test_montecarlo_output(model, input_array, target_array, number_of_runs, name):
     mc_predictions = []
-    true_RULs, RUL_distributions, mean_RULs = {}, {}, {}
+    true_values, predicted_distributions, mean_predictions = {}, {}, {}
     RMSE, MAE = 0, 0
 
     rd.seed(7042018)
     tf.random.set_seed(7042018)
 
-    # predict the RUL value MC_runs times
+    # predict the target value MC_runs times
     for _ in tqdm.tqdm(range(number_of_runs)):
         y_p = np.rint(model.predict(input_array))
         mc_predictions.append(y_p)
 
     # capture the mean of the predictions, the actual predictions and the standard deviation of the predictions
     for i in range(len(mc_predictions[0])):
-        all_predictions = []
-        for j in range(len(mc_predictions)):
-            all_predictions.append(mc_predictions[j][i][0])
-        RUL_distributions[i] = all_predictions
-        true_RULs[i] = target_array[i]
-        mean_RULs[i] = np.mean(np.array(all_predictions))
+        all_predictions = [mc_predictions[j][i][0] for j in range(len(mc_predictions))]
+        predicted_distributions[i] = all_predictions
+        true_values[i] = target_array[i]
+        mean_predictions[i] = np.mean(np.array(all_predictions))
         RMSE = RMSE + (target_array[i] - np.mean(np.array(all_predictions))) ** 2
         MAE = MAE + abs(target_array[i] - np.mean(np.array(all_predictions)))
 
-    coverage_0_5, mean_width_0_5 = compute_coverage(true_RULs, RUL_distributions, 0.5)
-    coverage_0_9, mean_width_0_9 = compute_coverage(true_RULs, RUL_distributions, 0.9)
-    coverage_0_95, mean_width_0_95 = compute_coverage(true_RULs, RUL_distributions, 0.95)
-    RS_total, RS_under, RS_over, curve = compute_reliability_score(true_RULs, RUL_distributions, name)
-    
+    coverage_0_5, mean_width_0_5 = compute_coverage(true_values, predicted_distributions, 0.5)
+    coverage_0_9, mean_width_0_9 = compute_coverage(true_values, predicted_distributions, 0.9)
+    coverage_0_95, mean_width_0_95 = compute_coverage(true_values, predicted_distributions, 0.95)
+    RS_total, RS_under, RS_over, _ = compute_reliability_score(true_values, predicted_distributions, name)
 
-    mean_var, mean_std = compute_mean_variance(RUL_distributions, number_of_runs)
+    mean_var, mean_std = compute_mean_variance(predicted_distributions, number_of_runs)
 
-# Summary of Metrics (FD001):
-# - Total Predictions: 100
-# - Reliability Score (under): 0.0314 (Lower is better; indicates minimal underestimation of uncertainty)
-# - Reliability Score (over): 0.0192 (Lower is better; indicates minimal overestimation of uncertainty)
-# - Total Reliability Score: 0.0506 (Sum of under and over; lower is better)
-# - Coverage at alpha = 0.5: 0.49 (Close to 0.5 indicates good calibration)
-# - Mean Width at alpha = 0.5: 15.14 (Smaller widths are better for precision)
-# - Coverage at alpha = 0.9: 0.86 (Close to 0.9 indicates good calibration)
-# - Mean Width at alpha = 0.9: 37.06
-# - Coverage at alpha = 0.95: 0.86 (Close to 0.95 indicates good calibration)
-# - Mean Width at alpha = 0.95: 37.06
-# - RMSE: 13.12 (Lower is better; indicates accuracy of predictions)
-# - MAE: 9.92 (Lower is better; indicates accuracy of predictions)
-# - Mean Variance: 128.14 (Lower is better; indicates consistency of predictions)
-# - Mean Standard Deviation: 11.10 (Lower is better; indicates precision of predictions)
-#
-# Overall, these metrics suggest the model has good calibration, reliability, and predictive accuracy.
     print("\nThere are a total of " + str(len(target_array)) + " predictions.")
     print("The reliability score (under) is " + str(RS_under))
     print("The reliability score (over) is " + str(RS_over))
     print("The total reliability score is " + str(RS_total))
     print("The coverage at alpha = 0.5 is " + str(coverage_0_5))
     print("The mean width at 0.5 is " + str(mean_width_0_5))
-    print("The coverage at 0.alpha = 0.9 is " + str(coverage_0_9))
+    print("The coverage at alpha = 0.9 is " + str(coverage_0_9))
     print("The mean width at 0.9 is " + str(mean_width_0_9))
-    print("The coverage at 0.alpha = 0.95 is " + str(coverage_0_95))
+    print("The coverage at alpha = 0.95 is " + str(coverage_0_95))
     print("The mean width at 0.95 is " + str(mean_width_0_95))
     RMSE = math.sqrt(RMSE / len(target_array))
     print("The RMSE is " + str(RMSE))
     print("The MAE is " + str(MAE / len(target_array)))
     print("The mean variance is ", mean_var)
     print("The mean std is ", mean_std)
+    
 
-    return curve
 
 
 def plot_combined_reliability_diagram(ideal_curve, reliability_curves, names):

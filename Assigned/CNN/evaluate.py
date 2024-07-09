@@ -93,11 +93,11 @@ def main():
         print(f"Visualizing model for engine set: {engine_set}")
 
         # Load and plot the training history
-        history = np.load(f'cnn_figures/cnn_history_{engine_set}.npy', allow_pickle=True).item()
+        history = np.load(f'cnn_history\cnn_history_1D_FD001.npy', allow_pickle=True).item()
         plot_CNN_history_statistics(history)
 
         # Load the saved model
-        model = load_model(f'cnn_model_{engine_set}.keras', custom_objects={'MCDropout': MCDropout})
+        model = load_model(f'cnn_model_1D_{engine_set}.keras', custom_objects={'MCDropout': MCDropout})
         
         print("Model loaded successfully.")
         # Print information about the model
@@ -109,7 +109,7 @@ def main():
         plot_predictions(model, engine_set, x_test, y_test)  
 
         # Evaluate the model using metrics from the paper (copied)
-        curve = rm.test_montecarlo_output(model,x_test, y_test, 20, [3], engine_set)
+        curve = rm.test_montecarlo_output(model,x_test, y_test, 20, engine_set)
         reliability_curves.append(curve)
 
     #ideal_curve = list(np.arange(0, 1 + sys.float_info.epsilon, 0.01))  # ideal curve, where y = x
@@ -121,6 +121,25 @@ if __name__ == '__main__':
     main()
 
 
+#----------------------------------------------------------------------------------
+# 1D MODEL:
+# There are a total of 100 predictions.
+# The reliability score (under) is 0.05703750000000007
+# The reliability score (over) is 0.0020875
+# The total reliability score is 0.059125000000000066
+# The coverage at alpha = 0.5 is 0.41
+# The mean width at 0.5 is 11.45
+# The coverage at alpha = 0.9 is 0.83
+# The mean width at 0.9 is 29.02
+# The coverage at alpha = 0.95 is 0.83
+# The mean width at 0.95 is 29.02
+# The RMSE is 12.122546987554749
+# The MAE is 9.08499984741211
+# The mean variance is  91.05385000000334
+# The mean std is  8.72392031194261
+#----------------------------------------------------------------------------------
+
+# 2D MODEL:
 # There are a total of 100 predictions.
 # The reliability score (under) is 0.011492820512820526
 # The reliability score (over) is 0.03014282051282053

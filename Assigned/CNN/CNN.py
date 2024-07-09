@@ -11,7 +11,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from keras import Sequential
-from keras._tf_keras.keras.layers import Conv2D, Flatten, Dense, Dropout
+from keras._tf_keras.keras.layers import Conv1D, Conv2D, Flatten, Dense, Dropout, MaxPooling1D
 from keras._tf_keras.keras.optimizers import Adam
 from keras._tf_keras.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import numpy as np
@@ -145,7 +145,7 @@ def create_model():
 
 def train_model(model, X_train, y_train, engine_set):
     # Define callbacks
-    mcp_save = ModelCheckpoint(f"cnn_model_{engine_set}.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
+    mcp_save = ModelCheckpoint(f"cnn_model_1D_{engine_set}.keras", save_best_only=True, monitor="val_loss", mode="min", verbose=1)
     reduce_lr_loss = ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=10, min_lr=0.0000001, verbose=1, min_delta=1e-4, mode="auto")
     early_stopping = EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True)
 
@@ -163,6 +163,24 @@ def train_model(model, X_train, y_train, engine_set):
 
     
     return history
+
+def create_1d_model(input_shape):
+    model = Sequential([
+        Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=input_shape),
+        MCDropout(rate=0.5),
+        MaxPooling1D(pool_size=2),
+        Conv1D(filters=128, kernel_size=3, activation='relu'),
+        MCDropout(rate=0.5),
+        MaxPooling1D(pool_size=2),
+        Flatten(),
+        Dense(128, activation='relu'),
+        MCDropout(rate=0.5),
+        Dense(1, activation='linear')
+    ])
+    
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
+    
+    return model
 # ----------------------------------------------------------------------------------
 
 def main():
@@ -181,7 +199,7 @@ def main():
         X_train, y_train = create_sequences(engine_set, window_size=N)
         
         # Create and train the model
-        model = create_model()
+        model = create_1d_model((X_train.shape[1], X_train.shape[2]))
         history = train_model(model, X_train, y_train, engine_set)
         
         # Create a folder for cnn_history if it doesn't exist
@@ -190,7 +208,7 @@ def main():
 
         # Save the training history
         # This gets used by the evaluate.py script to plot the loss and MAE against the number of epochs.
-        np.save(f'cnn_history/cnn_history_{engine_set}.npy', history.history)
+        np.save(f'cnn_history/cnn_history_1D_{engine_set}.npy', history.history)
 
         # Evaluate the model on the test data
         #ev.main(engine_set)
