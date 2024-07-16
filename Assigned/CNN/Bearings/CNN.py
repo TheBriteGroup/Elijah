@@ -15,9 +15,9 @@ import data_prep as dp
 
 # Set the directory paths and total times for each bearing
 directory_paths = {
-    'Bearing1_4': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set\Bearing1_4',
-    #'Bearing2_4': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set\Bearing2_4', # Change temp separator to ;
-    #'Bearing3_3': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set\Bearing3_3'
+    'Bearing1_4': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set/Bearing1_4',
+    #'Bearing2_4': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set/Bearing2_4', # Change temp separator to ;
+    #'Bearing3_3': 'C:/Users/elija/Downloads/archive/ieee-phm-2012-data-challenge-dataset-master/Test_set/Bearing3_3'
 }
 
 total_times = {
@@ -26,12 +26,12 @@ total_times = {
     'Bearing3_3': 3510
 }
 
-output_directory = 'Assigned\CNN\Bearings\Data'
+output_directory = 'Assigned/CNN/Bearings/Data'
 
 
 # Set the sequence length
 sequence_length = 30
-num_sensors = 3
+num_sensors = 2  # Update the number of sensors to 2 (horizontal and vertical vibration)
 downsample_factor = 10
 validation_split = 0.1
 test_split = 0.2
@@ -42,15 +42,8 @@ preprocessed_data = dp.main(directory_paths, total_times, sequence_length, downs
 
 # Prepare the data for training, validation, and testing
 bearing_data = preprocessed_data['Bearing1_4']  # Select the desired bearing data
-print(bearing_data)
 sequences = bearing_data['sequences']
-print(sequences)
 targets = bearing_data['targets']
-print(targets)
-
-input("enter...")
-
-
 
 # Split the data into training, validation, and testing sets
 train_sequences, test_sequences, train_targets, test_targets = train_test_split(
@@ -58,12 +51,14 @@ train_sequences, test_sequences, train_targets, test_targets = train_test_split(
 train_sequences, val_sequences, train_targets, val_targets = train_test_split(
     train_sequences, train_targets, test_size=validation_split / (1 - test_split), random_state=42)
 
-# Create the CNN model
+# Create the CNN model with sliding window
 model = Sequential([
-    Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(sequence_length, num_sensors)),
+    Conv1D(filters=64, kernel_size=3, activation='relu', input_shape=(sequence_length, num_sensors)),
+    MaxPooling1D(pool_size=2),
+    Conv1D(filters=128, kernel_size=3, activation='relu'),
     MaxPooling1D(pool_size=2),
     Flatten(),
-    Dense(32, activation='relu'),
+    Dense(128, activation='relu'),
     Dense(1)
 ])
 
@@ -72,14 +67,12 @@ print(f"NaN values in sequences: {np.isnan(sequences).sum()}")
 print(f"NaN values in targets: {np.isnan(targets).sum()}")
 
 # Remove sequences with NaN values
-sequences = sequences[~np.isnan(sequences).any(axis=(2, 2))]
+sequences = sequences[~np.isnan(sequences).any(axis=(1, 2))]
 targets = targets[~np.isnan(targets)]
 
 # Check again for NaN values
 print(f"NaN values in cleaned sequences: {np.isnan(sequences).sum()}")
 print(f"NaN values in cleaned targets: {np.isnan(targets).sum()}")
-
-input("Press enter to continue")
 
 # Compile the model
 model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])

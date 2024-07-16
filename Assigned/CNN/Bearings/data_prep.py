@@ -54,7 +54,7 @@ def create_sequences(data, sequence_length):
     for i in range(total_sequences):
         if i % 1000 == 0:
             print(f"Creating sequence {i+1}/{total_sequences}")
-        sequence = data.iloc[i:i+sequence_length][['horizontal_vibration', 'vertical_vibration', 'temperature']].values
+        sequence = data.iloc[i:i+sequence_length][['horizontal_vibration', 'vertical_vibration']].values
         target = data.iloc[i+sequence_length]['rul']
         sequences.append(sequence)
         targets.append(target)
@@ -90,12 +90,8 @@ def main(directory_paths, total_times, sequence_length, downsample_factor, outpu
         preprocessed_data = {}
         for bearing, directory_path in directory_paths.items():
             vibration_data = load_vibration_data(directory_path)
-            temperature_data = load_temperature_data(directory_path)
-            temperature_data['microsecond'] = temperature_data['decisecond'] * 100000
             vibration_data['rul'] = calculate_rul(total_times[bearing], vibration_data)
-            data = pd.merge(vibration_data, temperature_data, on=['hour', 'minute', 'second', 'microsecond'], how='outer')
-            data = data[['horizontal_vibration', 'vertical_vibration', 'temperature', 'rul']]
-            data = normalize_data(data)
+            data = vibration_data[['horizontal_vibration', 'vertical_vibration', 'rul']]
             data = downsample_data(data, downsample_factor)
             sequences, targets = create_sequences(data, sequence_length)
             preprocessed_data[bearing] = {
