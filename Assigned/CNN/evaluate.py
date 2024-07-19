@@ -55,7 +55,7 @@ def create_sequences(instance, window_size):
     input("Press Enter to continue...")
     return input_array, target_array
 
-def plot_predictions(model, instance, X_test, y_test):
+def plot_predictions(model, X_test, y_test):
     
     # Evaluate the model on the test data
     loss, mae = model.evaluate(X_test, y_test)
@@ -106,7 +106,7 @@ def main():
         # Process the test data and plot predictions
         x_test, y_test = create_sequences(engine_set, window_size=30)
 
-        plot_predictions(model, engine_set, x_test, y_test)  
+        plot_predictions(model, x_test, y_test)  
 
         # Evaluate the model using metrics from the paper (copied)
         curve = rm.test_montecarlo_output(model,x_test, y_test, 20, engine_set)
